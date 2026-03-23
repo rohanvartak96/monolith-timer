@@ -1,0 +1,3 @@
+{
+  "rewrites": [{ "source": "/", "destination": "/monolith-timer.html" }]
+}
