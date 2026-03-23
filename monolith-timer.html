@@ -51,7 +51,7 @@
   main.page { flex: 1; flex-direction: column; align-items: center; justify-content: flex-start; overflow: hidden; gap: 0; padding: 0; }
   main.page.active { display: flex; }
 
-  .timer-display { font-size: 7rem; font-weight: 200; letter-spacing: -0.03em; line-height: 1; color: var(--fg); font-variant-numeric: tabular-nums; transition: color 0.3s; display: flex; align-items: baseline; }
+  .timer-display { font-size: clamp(4.5rem, 19vw, 7rem); font-weight: 200; letter-spacing: -0.03em; line-height: 1; color: var(--fg); font-variant-numeric: tabular-nums; transition: color 0.3s; display: flex; align-items: baseline; }
   .timer-display.danger { color: #ba1a1a; }
 
   .td-char {
@@ -124,14 +124,15 @@
   .pill-primary:disabled { opacity: 0.3; cursor: default; }
   .pill-primary .material-symbols-outlined { font-size: 18px; font-variation-settings: 'FILL' 1; }
 
-  .presets { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 280px; }
+  .presets { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: min(320px, calc(100% - 48px)); }
 
-  .controls { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 280px; }
+  .controls { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: min(320px, calc(100% - 48px)); margin-top: clamp(24px, 6vh, 52px); }
   .hidden { display: none !important; }
 
   /* Custom time selectors */
-  .custom-selectors { display: none; align-items: center; justify-content: center; gap: 8px; width: 100%; max-width: 280px; }
+  .custom-selectors { display: none; align-items: center; justify-content: center; gap: 8px; width: 100%; max-width: min(320px, calc(100% - 48px)); }
   .custom-selectors.visible { display: flex; }
+
 
   .time-select-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1; }
 
@@ -209,6 +210,24 @@
     50% { background: #f5ddb4; border-color: #c8841a; color: #7a4f0d; }
   }
 
+  /* Timer page layout sections */
+  .timer-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding-top: clamp(24px, 6vh, 48px);
+  }
+
+  .controls-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: clamp(24px, 7vh, 52px) 24px 0;
+    width: 100%;
+    gap: 0;
+  }
+
   /* Bottom nav */
   .bottom-nav {
     flex-shrink: 0;
@@ -219,7 +238,7 @@
     display: flex;
     justify-content: space-around;
     align-items: center;
-    padding: 10px 0 20px;
+    padding: 10px 0 max(20px, env(safe-area-inset-bottom));
     z-index: 50;
   }
 
@@ -263,9 +282,9 @@
   .sub-page.active { display: flex; }
 
   /* Hub */
-  #settingsHub { padding: 40px 0 0; align-items: center; gap: 24px; }
+  #settingsHub { padding: clamp(20px, 5vh, 40px) 0 0; align-items: center; gap: 24px; }
   .settings-title { font-size: 13px; font-weight: 800; letter-spacing: 0.25em; text-transform: uppercase; color: var(--fg); }
-  .settings-btns { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 280px; margin-top: 8px; }
+  .settings-btns { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: min(320px, calc(100% - 48px)); margin-top: 8px; }
 
   /* Sub-page header */
   .sub-page-header {
@@ -447,13 +466,13 @@
 </header>
 
 <main class="page active" id="timerPage">
-  <div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding-top:48px;">
+  <div class="timer-section">
     <div class="timer-display" id="timerDisplay">00:00</div>
     <div class="timer-label" id="timerLabel">ready</div>
   </div>
 
-  <div style="display:flex;flex-direction:column;align-items:center;padding:52px 24px 0;width:100%;gap:0;">
-    <div class="presets" id="presetsSection" style="width:100%;max-width:280px;display:flex;flex-direction:column;gap:10px;">
+  <div class="controls-section">
+    <div class="presets" id="presetsSection">
       <button class="pill" data-seconds="1800" style="margin-top:24px;">30 minutes</button>
       <button class="pill" data-seconds="3600">1 hour</button>
       <button class="pill" data-seconds="7200">2 hours</button>
@@ -480,7 +499,7 @@
       </div>
     </div>
 
-    <div class="controls" style="margin-top:52px;">
+    <div class="controls">
       <button class="pill-primary" id="playBtn" disabled>
         <span class="material-symbols-outlined" id="playIcon">play_arrow</span>
         <span id="playLabel">Start</span>
@@ -488,6 +507,14 @@
       <button class="pill hidden" id="resetBtn">
         <span class="material-symbols-outlined">replay</span>
         Reset
+      </button>
+      <button class="pill hidden" id="customBackBtn">
+        <span class="material-symbols-outlined">arrow_back</span>
+        Back
+      </button>
+      <button class="pill hidden" id="customResetBtn">
+        <span class="material-symbols-outlined">restart_alt</span>
+        Reset time
       </button>
       <button class="pill hidden" id="repeatBtn">
         <span class="material-symbols-outlined">repeat</span>
@@ -614,7 +641,7 @@
       </button>
     </div>
     <div class="sub-page-scroll">
-      <div id="presetEditor" style="width:100%;max-width:280px;"></div>
+      <div id="presetEditor" style="width:100%;max-width:min(320px, calc(100% - 48px));"></div>
     </div>
     <div class="preset-apply-bar">
       <button class="pill-primary sub-page-apply" id="applyPresetsBtn">
@@ -755,12 +782,19 @@
     setDisplay(secs === 0 ? '00:00' : fmt(secs));
     display.classList.remove('danger');
     playBtn.disabled = secs === 0;
+    if (customMode) {
+      secs > 0 ? customResetBtn.classList.remove('hidden') : customResetBtn.classList.add('hidden');
+    }
   }
+
+  const customResetBtn = document.getElementById('customResetBtn');
+  const customBackBtn = document.getElementById('customBackBtn');
 
   function enterCustomMode() {
     customMode = true;
     presetsSection.style.display = 'none';
     customSelectors.classList.add('visible');
+    customBackBtn.classList.remove('hidden');
     selectedPreset = null;
     presetBtns.forEach(b => b.classList.remove('active'));
     selH.value = 0; selM.value = 0; selS.value = 0;
@@ -776,10 +810,22 @@
   function exitCustomMode() {
     customMode = false;
     customSelectors.classList.remove('visible');
+    customResetBtn.classList.add('hidden');
+    customBackBtn.classList.add('hidden');
     presetsSection.style.display = '';
     customTimeBtn.classList.remove('active');
     if (document.body.classList.contains('state-custom')) setState(null);
   }
+
+  customResetBtn.addEventListener('click', () => {
+    selH.value = 0; selM.value = 0; selS.value = 0;
+    updateFromSelectors();
+  });
+
+  customBackBtn.addEventListener('click', () => {
+    exitCustomMode();
+    setTimer(0);
+  });
 
   customTimeBtn.addEventListener('click', () => {
     if (customMode) { exitCustomMode(); setTimer(0); }
@@ -922,6 +968,7 @@
       customTimeBtn.classList.remove('active');
       btn.classList.add('active');
       setTimer(secs);
+      resetBtn.classList.remove('hidden');
     });
   });
 
