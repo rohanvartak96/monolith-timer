@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>MONOLITH — The Timeless Timer</title>
+<link rel="manifest" href="manifest.json"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<meta name="apple-mobile-web-app-title" content="Monolith"/>
+<meta name="theme-color" content="#f9f9f9"/>
+<link rel="apple-touch-icon" href="icon-180.png"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f9f9f9;
+    --fg: #1b1b1b;
+    --fg-muted: #777;
+    --chip-bg: #e2e2e2;
+    --chip-hover: #d0d0d0;
+    --btn-bg: #1b1b1b;
+    --btn-fg: #f9f9f9;
+    --border: rgba(0,0,0,0.08);
+    --shadow: 0 8px 40px rgba(0,0,0,0.08);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f0f0f;
+      --fg: #f0f0f0;
+      --fg-muted: #888;
+      --chip-bg: #1e1e1e;
+      --chip-hover: #2a2a2a;
+      --btn-bg: #f0f0f0;
+      --btn-fg: #0f0f0f;
+      --border: rgba(255,255,255,0.07);
+      --shadow: 0 8px 40px rgba(0,0,0,0.4);
+    }
+  }
+
+  html, body { height: 100%; background: var(--bg); color: var(--fg); font-family: 'Manrope', sans-serif; -webkit-font-smoothing: antialiased; overflow: hidden; }
+  body { display: flex; flex-direction: column; height: 100dvh; }
+
+  header { display: flex; align-items: center; justify-content: center; padding: 20px 24px 16px; flex-shrink: 0; }
+
+  .wordmark { font-size: 13px; font-weight: 800; letter-spacing: 0.25em; text-transform: uppercase; color: var(--fg); }
+
+  main.page { flex: 1; flex-direction: column; align-items: center; justify-content: flex-start; overflow: hidden; gap: 0; padding: 0; }
+  main.page.active { display: flex; }
+
+  .timer-display { font-size: 7rem; font-weight: 200; letter-spacing: -0.03em; line-height: 1; color: var(--fg); font-variant-numeric: tabular-nums; transition: color 0.3s; display: flex; align-items: baseline; }
+  .timer-display.danger { color: #ba1a1a; }
+
+  .td-char {
+    display: inline-block;
+    position: relative;
+    overflow: hidden;
+    height: 1em;
+    line-height: 1em;
+  }
+  .td-char-inner {
+    display: block;
+    will-change: transform;
+  }
+  .td-char-inner.flip-down {
+    animation: flip-down 0.18s cubic-bezier(0.4,0,0.2,1) forwards;
+  }
+  @keyframes flip-down {
+    0%   { transform: translateY(-35%); opacity: 0.3; }
+    100% { transform: translateY(0);    opacity: 1;   }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .td-char-inner.flip-down { animation: none; }
+  }
+
+  .timer-label { font-size: 11px; font-weight: 500; letter-spacing: 0.15em; text-transform: uppercase; color: var(--fg-muted); }
+
+  .material-symbols-outlined { font-family: 'Material Symbols Outlined'; font-style: normal; line-height: 1; display: inline-block; vertical-align: middle; user-select: none; }
+
+  /* shared pill style */
+  .pill {
+    width: 100%;
+    padding: 14px 24px;
+    border-radius: 999px;
+    border: 1.5px solid var(--border);
+    background: var(--chip-bg);
+    color: var(--fg);
+    font-family: 'Manrope', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    transition: background 0.15s, transform 0.1s, border-color 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .pill:hover { background: var(--chip-hover); }
+  .pill:active { transform: scale(0.97); }
+  .pill.active { background: #555; color: #f9f9f9; border-color: transparent; }
+  .pill .material-symbols-outlined { font-size: 16px; }
+
+  .pill-primary {
+    width: 100%;
+    padding: 14px 24px;
+    border-radius: 999px;
+    border: none;
+    background: var(--btn-bg);
+    color: var(--btn-fg);
+    font-family: 'Manrope', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    transition: opacity 0.15s, transform 0.1s;
+    box-shadow: var(--shadow);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .pill-primary:hover { opacity: 0.85; }
+  .pill-primary:active { transform: scale(0.97); }
+  .pill-primary:disabled { opacity: 0.3; cursor: default; }
+  .pill-primary .material-symbols-outlined { font-size: 18px; font-variation-settings: 'FILL' 1; }
+
+  .presets { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 280px; }
+
+  .controls { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 280px; }
+  .hidden { display: none !important; }
+
+  /* Custom time selectors */
+  .custom-selectors { display: none; align-items: center; justify-content: center; gap: 8px; width: 100%; max-width: 280px; }
+  .custom-selectors.visible { display: flex; }
+
+  .time-select-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1; }
+
+  .time-select-label { font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-muted); }
+
+  .time-select {
+    width: 100%; padding: 12px 8px; border-radius: 14px;
+    border: 1.5px solid var(--border); background: var(--chip-bg); color: var(--fg);
+    font-family: 'Manrope', sans-serif; font-size: 20px; font-weight: 300;
+    text-align: center; cursor: pointer; outline: none;
+    appearance: none; -webkit-appearance: none;
+    transition: border-color 0.15s;
+  }
+  .time-select:focus { border-color: var(--fg); }
+
+  /* ── Colour state transitions ────────────────────────── */
+  body { transition: background-color 0.8s ease; }
+
+  /* 1. Countdown running: blue-gray background */
+  body.state-running { background-color: #eef0f4; }
+
+  /* 2. Last 10s: red blush background + red border on play button */
+  body.state-danger { background-color: #fdf1f1; }
+  body.state-danger .pill-primary {
+    border: 1.5px solid rgba(186,26,26,0.35);
+    transition: opacity 0.15s, transform 0.1s, border-color 0.4s;
+  }
+
+  /* 3. Time's up: warm amber background exhales back */
+  body.state-done { background-color: #fdf6ec; transition: background-color 0.4s ease; }
+  body.state-done .timer-label { color: #c8841a; transition: color 0.3s; }
+  body.state-done .timer-display { color: #c8841a; animation: gentle-pulse 1s ease-in-out infinite; }
+
+  /* 4. Paused: yellow tint on display + yellow tint on play button */
+  body.state-paused .timer-display { color: #a07c00; }
+  body.state-paused .pill-primary {
+    border: 1.5px solid rgba(180,140,0,0.35);
+    transition: opacity 0.15s, transform 0.1s, border-color 0.4s;
+  }
+
+  /* 5. Custom time: green tint on display */
+  body.state-custom .timer-display { color: #3a7d52; }
+
+  @keyframes gentle-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.045); }
+  }
+
+  /* Speaker toggle */
+  .speaker-btn {
+    position: absolute;
+    right: 24px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 36px; height: 36px;
+    border: none; background: none; cursor: pointer;
+    color: var(--fg);
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%;
+    transition: background 0.15s, opacity 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .speaker-btn:hover { background: var(--chip-bg); }
+  .speaker-btn:active { transform: translateY(-50%) scale(0.93); }
+  .speaker-btn.muted { opacity: 0.35; }
+  .speaker-btn .material-symbols-outlined { font-size: 20px; }
+
+
+  .pill.reset-glow {
+    animation: reset-glow 1.5s ease-in-out infinite;
+  }
+
+  @keyframes reset-glow {
+    0%, 100% { background: var(--chip-bg); border-color: var(--border); }
+    50% { background: #f5ddb4; border-color: #c8841a; color: #7a4f0d; }
+  }
+
+  /* Bottom nav */
+  .bottom-nav {
+    flex-shrink: 0;
+    background: var(--nav-bg, rgba(249,249,249,0.88));
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border-top: 0.5px solid var(--border);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 10px 0 20px;
+    z-index: 50;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .bottom-nav { background: rgba(15,15,15,0.88); }
+  }
+
+  .nav-tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: var(--fg-muted);
+    padding: 4px 0;
+    transition: color 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .nav-tab.active { color: var(--fg); }
+  .nav-tab:hover { color: var(--fg); }
+  .nav-tab.disabled { opacity: 0.25; pointer-events: none; cursor: default; }
+  .nav-tab .material-symbols-outlined { font-size: 24px; }
+  .nav-tab-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  /* Pages */
+  .page { display: none; flex: 1; flex-direction: column; overflow: hidden; }
+  .page.active { display: flex; }
+
+  /* ── Settings page ───────────────────────────────── */
+  .settings-page { padding: 0; gap: 0; align-items: stretch; overflow: hidden; }
+
+  .sub-page { display: none; flex-direction: column; width: 100%; flex: 1; overflow: hidden; }
+  .sub-page.active { display: flex; }
+
+  /* Hub */
+  #settingsHub { padding: 40px 0 0; align-items: center; gap: 24px; }
+  .settings-title { font-size: 13px; font-weight: 800; letter-spacing: 0.25em; text-transform: uppercase; color: var(--fg); }
+  .settings-btns { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 280px; margin-top: 8px; }
+
+  /* Sub-page header */
+  .sub-page-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 20px 24px 16px; flex-shrink: 0;
+    border-bottom: 0.5px solid var(--border);
+  }
+  .back-btn {
+    display: flex; align-items: center; gap: 4px;
+    padding: 6px 10px 6px 4px;
+    border: none; background: none; cursor: pointer;
+    color: var(--fg);
+    border-radius: 8px; transition: background 0.15s;
+    flex-shrink: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .back-btn:hover { background: var(--chip-bg); }
+  .back-btn .material-symbols-outlined { font-size: 16px; }
+  .back-label {
+    font-family: 'Manrope', sans-serif;
+    font-size: 13px; font-weight: 700;
+    letter-spacing: 0.08em; text-transform: uppercase;
+  }
+
+  /* Sub-page scroll body */
+  .sub-page-scroll {
+    flex: 1; overflow-y: auto; padding: 0 24px 24px;
+    display: flex; flex-direction: column; align-items: center;
+  }
+
+  /* Chime page independent scroll */
+  .chime-scroll {
+    flex: 1; overflow-y: auto; padding: 0 24px;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .chime-apply-bar, .preset-apply-bar {
+    flex-shrink: 0;
+    padding: 16px 24px 20px;
+    display: flex; justify-content: center;
+    border-top: 0.5px solid var(--border);
+    background: var(--bg);
+  }
+  .sub-page-apply { width: 100%; max-width: 280px; }
+
+  /* Chime list */
+  #chimeList {
+    width: 100%; max-width: 280px; display: flex; flex-direction: column; align-items: stretch;
+  }
+
+  .chime-item {
+    width: 100%; max-width: 280px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 0; border: none; background: none; cursor: pointer;
+    border-bottom: 0.5px solid var(--border); text-align: left;
+    -webkit-tap-highlight-color: transparent; transition: opacity 0.15s;
+  }
+  .chime-item:last-child { border-bottom: none; }
+  .chime-item:hover { opacity: 0.7; }
+  .chime-item-info { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+  .chime-item-name { font-size: 14px; font-weight: 500; color: var(--fg); }
+  .chime-item-desc { font-size: 12px; color: var(--fg-muted); }
+  .chime-item-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  .chime-preview-btn {
+    font-size: 22px; color: var(--fg-muted); background: none; border: none;
+    cursor: pointer; transition: color 0.15s, transform 0.1s; padding: 0; line-height: 1;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .chime-preview-btn:hover { transform: scale(1.15); color: var(--fg); }
+  .chime-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--fg); opacity: 0; transition: opacity 0.2s; flex-shrink: 0;
+  }
+  .chime-item.selected .chime-dot { opacity: 1; }
+  .chime-item.selected .chime-item-name { font-weight: 700; }
+
+  /* Preset blocks */
+  .preset-block {
+    width: 100%; max-width: 280px;
+    padding: 20px 0; border-bottom: 0.5px solid var(--border);
+  }
+  .preset-block:last-child { border-bottom: none; }
+  .preset-block-label {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--fg-muted); margin-bottom: 12px;
+  }
+  .preset-block-name {
+    width: 100%; border: none; background: none; outline: none;
+    font-family: 'Manrope', sans-serif; font-size: 15px; font-weight: 600; color: var(--fg);
+    border-bottom: 1.5px solid var(--border); padding: 4px 0; margin-bottom: 14px;
+    transition: border-color 0.15s;
+  }
+  .preset-block-name:focus { border-color: var(--fg); }
+  .preset-block-time { display: flex; align-items: flex-end; gap: 6px; }
+  .preset-block-time-group { display: flex; flex-direction: column; align-items: center; gap: 5px; flex: 1; }
+  .preset-block-time-label { font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-muted); }
+  .preset-time-sel {
+    width: 100%; padding: 8px 4px; border-radius: 10px;
+    border: 1.5px solid var(--border); background: var(--chip-bg); color: var(--fg);
+    font-family: 'Manrope', sans-serif; font-size: 15px; font-weight: 600;
+    text-align: center; cursor: pointer; outline: none;
+    appearance: none; -webkit-appearance: none;
+  }
+  .preset-time-colon { font-size: 20px; font-weight: 200; color: var(--fg-muted); padding-bottom: 10px; }
+
+  /* Progress bar */
+  .progress-bar {
+    position: fixed;
+    top: 0; left: 0;
+    height: 2px;
+    width: 0%;
+    background: var(--fg);
+    opacity: 0.18;
+    z-index: 999;
+    transition: width 1s linear, opacity 0.4s ease;
+    pointer-events: none;
+  }
+  .progress-bar.hidden { opacity: 0; }
+
+  /* Toggle */
+  .toggle { position: relative; width: 44px; height: 26px; flex-shrink: 0; cursor: pointer; }
+  .toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+  .toggle-track {
+    position: absolute; inset: 0; border-radius: 999px;
+    background: var(--chip-bg); border: 1.5px solid var(--border);
+    transition: background 0.2s, border-color 0.2s; cursor: pointer;
+  }
+  .toggle input:checked + .toggle-track { background: #1b1b1b; border-color: #1b1b1b; }
+  @media (prefers-color-scheme: dark) {
+    .toggle input:checked + .toggle-track { background: #f0f0f0; border-color: #f0f0f0; }
+  }
+  .toggle-thumb {
+    position: absolute; top: 3px; left: 3px;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--fg-muted);
+    transition: transform 0.2s, background 0.2s; pointer-events: none;
+  }
+  .toggle input:checked ~ .toggle-thumb { transform: translateX(18px); background: var(--bg); }
+
+  .progress-setting-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 0; gap: 16px;
+    border-bottom: 0.5px solid var(--border);
+  }
+
+  /* Volume slider */
+  input[type=range] {
+    -webkit-appearance: none; appearance: none;
+    height: 3px; border-radius: 999px;
+    background: var(--chip-bg);
+    outline: none; cursor: pointer;
+    border: none;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: var(--fg);
+    cursor: pointer;
+    transition: transform 0.1s;
+  }
+  input[type=range]::-webkit-slider-thumb:active { transform: scale(1.2); }
+  input[type=range]::-moz-range-thumb {
+    width: 20px; height: 20px;
+    border-radius: 50%; border: none;
+    background: var(--fg); cursor: pointer;
+  }
+
+</style>
+</head>
+<body>
+
+<div id="progressBar" class="progress-bar"></div>
+
+<header style="position:relative;">
+  <span class="wordmark">Monolith</span>
+  <button class="speaker-btn" id="speakerBtn" aria-label="Toggle sound">
+    <span class="material-symbols-outlined" id="speakerIcon">volume_up</span>
+  </button>
+</header>
+
+<main class="page active" id="timerPage">
+  <div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding-top:48px;">
+    <div class="timer-display" id="timerDisplay">00:00</div>
+    <div class="timer-label" id="timerLabel">ready</div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;align-items:center;padding:52px 24px 0;width:100%;gap:0;">
+    <div class="presets" id="presetsSection" style="width:100%;max-width:280px;display:flex;flex-direction:column;gap:10px;">
+      <button class="pill" data-seconds="1800" style="margin-top:24px;">30 minutes</button>
+      <button class="pill" data-seconds="3600">1 hour</button>
+      <button class="pill" data-seconds="7200">2 hours</button>
+      <button class="pill" id="customTimeBtn">
+        <span class="material-symbols-outlined">edit</span>
+        Custom time
+      </button>
+    </div>
+
+    <div class="custom-selectors" id="customSelectors">
+      <div class="time-select-wrap">
+        <span class="time-select-label">Hours</span>
+        <select class="time-select" id="selH"></select>
+      </div>
+      <span class="time-sep">:</span>
+      <div class="time-select-wrap">
+        <span class="time-select-label">Min</span>
+        <select class="time-select" id="selM"></select>
+      </div>
+      <span class="time-sep">:</span>
+      <div class="time-select-wrap">
+        <span class="time-select-label">Sec</span>
+        <select class="time-select" id="selS"></select>
+      </div>
+    </div>
+
+    <div class="controls" style="margin-top:52px;">
+      <button class="pill-primary" id="playBtn" disabled>
+        <span class="material-symbols-outlined" id="playIcon">play_arrow</span>
+        <span id="playLabel">Start</span>
+      </button>
+      <button class="pill hidden" id="resetBtn">
+        <span class="material-symbols-outlined">replay</span>
+        Reset
+      </button>
+      <button class="pill hidden" id="repeatBtn">
+        <span class="material-symbols-outlined">repeat</span>
+        Repeat
+      </button>
+    </div>
+  </div>
+</main>
+
+<main class="page settings-page" id="settingsPage">
+
+  <!-- Settings hub -->
+  <div class="sub-page active" id="settingsHub">
+    <p class="settings-title">Settings</p>
+    <div class="settings-btns">
+      <button class="pill" id="goChimeBtn">
+        <span class="material-symbols-outlined">music_note</span>
+        Chime selection
+      </button>
+      <button class="pill" id="goPresetsBtn">
+        <span class="material-symbols-outlined">tune</span>
+        Modify presets
+      </button>
+      <button class="pill" id="goModesBtn">
+        <span class="material-symbols-outlined">toggle_on</span>
+        Modes
+      </button>
+      <button class="pill" id="goVolumeBtn">
+        <span class="material-symbols-outlined">volume_up</span>
+        Volume
+      </button>
+    </div>
+  </div>
+
+  <!-- Modes sub-page -->
+  <div class="sub-page" id="modesPage">
+    <div class="sub-page-header">
+      <button class="back-btn" id="modesBack">
+        <span class="material-symbols-outlined">arrow_back_ios</span>
+        <span class="back-label">Back</span>
+      </button>
+    </div>
+    <div class="sub-page-scroll" style="padding-top:8px;">
+      <div style="width:100%;max-width:280px;">
+        <div class="progress-setting-row">
+          <div>
+            <p class="preset-block-label" style="margin-bottom:4px;">Progress bar</p>
+            <p style="font-size:12px;color:var(--fg-muted);">Thin line at top filling as countdown runs</p>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="progressToggle" checked/>
+            <div class="toggle-track"></div>
+            <div class="toggle-thumb"></div>
+          </label>
+        </div>
+        <div class="progress-setting-row">
+          <div>
+            <p class="preset-block-label" style="margin-bottom:4px;">Digit animation</p>
+            <p style="font-size:12px;color:var(--fg-muted);">Flip digits as the timer counts down</p>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="digitAnimToggle"/>
+            <div class="toggle-track"></div>
+            <div class="toggle-thumb"></div>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Volume sub-page -->
+  <div class="sub-page" id="volumePage">
+    <div class="sub-page-header">
+      <button class="back-btn" id="volumeBack">
+        <span class="material-symbols-outlined">arrow_back_ios</span>
+        <span class="back-label">Back</span>
+      </button>
+    </div>
+    <div class="sub-page-scroll" style="padding-top:24px;">
+      <div style="width:100%;max-width:280px;">
+        <div class="progress-setting-row" style="flex-direction:column;align-items:flex-start;gap:20px;">
+          <div style="width:100%;display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <p class="preset-block-label" style="margin-bottom:4px;">Chime volume</p>
+              <p style="font-size:12px;color:var(--fg-muted);">Controls chime loudness at completion</p>
+            </div>
+            <span id="volumeDisplay" style="font-size:14px;font-weight:700;color:var(--fg);min-width:36px;text-align:right;">70%</span>
+          </div>
+          <div style="width:100%;display:flex;align-items:center;gap:12px;">
+            <span class="material-symbols-outlined" style="font-size:18px;color:var(--fg-muted);">volume_mute</span>
+            <input type="range" id="volumeSlider" min="0" max="100" value="70" step="1" style="flex:1;"/>
+            <span class="material-symbols-outlined" style="font-size:18px;color:var(--fg-muted);">volume_up</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chime sub-page -->
+  <div class="sub-page" id="chimePage">
+    <div class="sub-page-header">
+      <button class="back-btn" id="chimeBack">
+        <span class="material-symbols-outlined">arrow_back_ios</span>
+        <span class="back-label">Back</span>
+      </button>
+    </div>
+    <div class="chime-scroll">
+      <div class="chime-list" id="chimeList"></div>
+    </div>
+    <div class="chime-apply-bar">
+      <button class="pill-primary sub-page-apply" id="applyChimeBtn">
+        <span class="material-symbols-outlined">check</span>
+        Save
+      </button>
+    </div>
+  </div>
+
+  <!-- Presets sub-page -->
+  <div class="sub-page" id="presetsSubPage">
+    <div class="sub-page-header">
+      <button class="back-btn" id="presetsBack">
+        <span class="material-symbols-outlined">arrow_back_ios</span>
+        <span class="back-label">Back</span>
+      </button>
+    </div>
+    <div class="sub-page-scroll">
+      <div id="presetEditor" style="width:100%;max-width:280px;"></div>
+    </div>
+    <div class="preset-apply-bar">
+      <button class="pill-primary sub-page-apply" id="applyPresetsBtn">
+        <span class="material-symbols-outlined">check</span>
+        Save
+      </button>
+    </div>
+  </div>
+
+</main>
+
+<nav class="bottom-nav">
+  <button class="nav-tab active" id="navTimer">
+    <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">timer</span>
+    <span class="nav-tab-label">Timer</span>
+  </button>
+  <button class="nav-tab" id="navSettings">
+    <span class="material-symbols-outlined">settings</span>
+    <span class="nav-tab-label">Settings</span>
+  </button>
+</nav>
+
+
+<script>
+  let totalSeconds = 0, remaining = 0, running = false, interval = null;
+  let endTime = null;
+  let doneFlashTimeout = null;
+  let selectedPreset = null, customMode = false;
+  let soundEnabled = true;
+  let chimeVolume = 0.7; // 0.0 – 1.0
+  let progressBarEnabled = true;
+  let digitAnimEnabled = false;
+
+  const progressBar = document.getElementById('progressBar');
+  const speakerBtn = document.getElementById('speakerBtn');
+  const speakerIcon = document.getElementById('speakerIcon');
+  const display = document.getElementById('timerDisplay');
+  const label = document.getElementById('timerLabel');
+  const playBtn = document.getElementById('playBtn');
+  const playIcon = document.getElementById('playIcon');
+  const playLabel = document.getElementById('playLabel');
+  const resetBtn = document.getElementById('resetBtn');
+  const repeatBtn = document.getElementById('repeatBtn');
+  const presetsSection = document.getElementById('presetsSection');
+  const customSelectors = document.getElementById('customSelectors');
+  const customTimeBtn = document.getElementById('customTimeBtn');
+  const presetBtns = document.querySelectorAll('.pill[data-seconds]');
+  const selH = document.getElementById('selH');
+  const selM = document.getElementById('selM');
+  const selS = document.getElementById('selS');
+  const navSettings = document.getElementById('navSettings');
+
+  for (let i = 0; i < 24; i++) selH.innerHTML += `<option value="${i}">${String(i).padStart(2,'0')}</option>`;
+  for (let i = 0; i < 60; i++) selM.innerHTML += `<option value="${i}">${String(i).padStart(2,'0')}</option>`;
+  for (let i = 0; i < 60; i++) selS.innerHTML += `<option value="${i}">${String(i).padStart(2,'0')}</option>`;
+
+  function fmt(s) {
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+    if (h > 0) return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+    return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+  }
+
+  // ── Digit flip renderer ───────────────────────────────
+  function setDisplay(text) {
+    const el = display;
+    const prev = [...el.querySelectorAll('.td-char')].map(c => c.dataset.ch);
+    const chars = [...text];
+
+    // Rebuild only if length changed (e.g. 00:00 → 00:00:00)
+    if (prev.length !== chars.length) {
+      el.innerHTML = chars.map(ch => {
+        const sep = ch === ':';
+        return `<span class="td-char" data-ch="${ch}"><span class="td-char-inner">${ch}</span></span>`;
+      }).join('');
+      return;
+    }
+
+    chars.forEach((ch, i) => {
+      const charEl = el.children[i];
+      if (!charEl) return;
+      if (charEl.dataset.ch === ch) return; // no change
+      charEl.dataset.ch = ch;
+      const inner = charEl.querySelector('.td-char-inner');
+      inner.textContent = ch;
+      // Trigger flip only on digit chars when animation is enabled
+      if (ch !== ':' && digitAnimEnabled) {
+        inner.classList.remove('flip-down');
+        void inner.offsetWidth; // reflow to restart animation
+        inner.classList.add('flip-down');
+      }
+    });
+  }
+
+  // Initialise display structure
+  setDisplay('00:00');
+
+  const STATES = ['state-running','state-danger','state-done','state-paused','state-custom'];
+  function setState(s) {
+    document.body.classList.remove(...STATES);
+    if (s) document.body.classList.add(s);
+  }
+
+  function updateProgress(rem, total) {
+    if (!progressBarEnabled || total === 0) {
+      progressBar.style.width = '0%';
+      progressBar.classList.add('hidden');
+      return;
+    }
+    const pct = ((total - rem) / total) * 100;
+    progressBar.classList.remove('hidden');
+    progressBar.style.width = pct + '%';
+  }
+
+  function setTimer(secs) {
+    stop();
+    clearTimeout(doneFlashTimeout); doneFlashTimeout = null;
+    totalSeconds = secs; remaining = secs;
+    setDisplay(secs === 0 ? '00:00' : fmt(secs));
+    display.classList.remove('danger');
+    display.classList.remove('done');
+    label.textContent = 'ready';
+    playBtn.disabled = secs === 0;
+    resetBtn.classList.add('hidden');
+    repeatBtn.classList.add('hidden');
+    repeatBtn.classList.remove('reset-glow');
+    playIcon.textContent = 'play_arrow';
+    playLabel.textContent = 'Start';
+    if (!customMode) presetsSection.style.display = '';
+    progressBar.style.transition = 'none';
+    progressBar.style.width = '0%';
+    progressBar.classList.add('hidden');
+    setState(null);
+  }
+
+  function updateFromSelectors() {
+    const secs = parseInt(selH.value)*3600 + parseInt(selM.value)*60 + parseInt(selS.value);
+    totalSeconds = secs; remaining = secs;
+    setDisplay(secs === 0 ? '00:00' : fmt(secs));
+    display.classList.remove('danger');
+    playBtn.disabled = secs === 0;
+  }
+
+  function enterCustomMode() {
+    customMode = true;
+    presetsSection.style.display = 'none';
+    customSelectors.classList.add('visible');
+    selectedPreset = null;
+    presetBtns.forEach(b => b.classList.remove('active'));
+    selH.value = 0; selM.value = 0; selS.value = 0;
+    repeatBtn.classList.add('hidden');
+    repeatBtn.classList.remove('reset-glow');
+    resetBtn.classList.add('hidden');
+    display.classList.remove('done');
+    clearTimeout(doneFlashTimeout); doneFlashTimeout = null;
+    setState('state-custom');
+    updateFromSelectors();
+  }
+
+  function exitCustomMode() {
+    customMode = false;
+    customSelectors.classList.remove('visible');
+    presetsSection.style.display = '';
+    customTimeBtn.classList.remove('active');
+    if (document.body.classList.contains('state-custom')) setState(null);
+  }
+
+  customTimeBtn.addEventListener('click', () => {
+    if (customMode) { exitCustomMode(); setTimer(0); }
+    else { customTimeBtn.classList.add('active'); enterCustomMode(); }
+  });
+
+  [selH, selM, selS].forEach(s => s.addEventListener('change', updateFromSelectors));
+
+  function disablePresets() {
+    presetBtns.forEach(b => { b.disabled = true; b.style.opacity = '0.35'; b.style.cursor = 'default'; });
+    customTimeBtn.disabled = true; customTimeBtn.style.opacity = '0.35'; customTimeBtn.style.cursor = 'default';
+  }
+
+  function enablePresets() {
+    presetBtns.forEach(b => { b.disabled = false; b.style.opacity = ''; b.style.cursor = ''; });
+    customTimeBtn.disabled = false; customTimeBtn.style.opacity = ''; customTimeBtn.style.cursor = '';
+  }
+
+  function start() {
+    if (remaining === 0) return;
+    running = true;
+    if (customMode) exitCustomMode();
+    playIcon.textContent = 'pause';
+    playLabel.textContent = 'Pause';
+    resetBtn.classList.remove('hidden');
+    repeatBtn.classList.add('hidden');
+    repeatBtn.classList.remove('reset-glow');
+    label.textContent = 'counting down';
+    presetsSection.style.display = 'none';
+    disablePresets();
+    navSettings.classList.add('disabled');
+    setState('state-running');
+
+    if (progressBarEnabled) {
+      progressBar.classList.remove('hidden');
+      progressBar.style.transition = 'none';
+      const pct = ((totalSeconds - remaining) / totalSeconds) * 100;
+      progressBar.style.width = pct + '%';
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          progressBar.style.transition = 'width 1s linear, opacity 0.4s ease';
+          updateProgress(remaining - 1, totalSeconds);
+        });
+      });
+    }
+
+    endTime = Date.now() + remaining * 1000;
+
+    interval = setInterval(() => {
+      remaining = Math.max(0, Math.round((endTime - Date.now()) / 1000));
+      setDisplay(fmt(remaining));
+      updateProgress(remaining, totalSeconds);
+      if (remaining <= 10 && remaining > 0) {
+        display.classList.add('danger');
+        setState('state-danger');
+      } else {
+        display.classList.remove('danger');
+        if (running) setState('state-running');
+      }
+      if (remaining <= 0) done();
+    }, 1000);
+  }
+
+  function pause() {
+    running = false; clearInterval(interval); interval = null;
+    playIcon.textContent = 'play_arrow';
+    playLabel.textContent = 'Resume';
+    label.textContent = 'paused';
+    presetsSection.style.display = '';
+    progressBar.style.transition = 'none';
+    setState('state-paused');
+    enablePresets();
+    navSettings.classList.remove('disabled');
+  }
+
+  function stop() { running = false; clearInterval(interval); interval = null; endTime = null; }
+
+  function done() {
+    stop();
+    display.classList.remove('danger');
+    display.classList.add('done');
+    label.textContent = "time's up";
+    playIcon.textContent = 'play_arrow';
+    playLabel.textContent = 'Start';
+    playBtn.disabled = true;
+    resetBtn.classList.add('hidden');
+    repeatBtn.classList.remove('hidden');
+    repeatBtn.classList.add('reset-glow');
+    setState('state-done');
+    progressBar.style.transition = 'opacity 0.4s ease';
+    progressBar.classList.add('hidden');
+    playChimes();
+    try { navigator.vibrate && navigator.vibrate([200,100,200,100,400]); } catch(e) {}
+
+    doneFlashTimeout = setTimeout(() => {
+      doneFlashTimeout = null;
+      display.classList.remove('done');
+      repeatBtn.classList.remove('reset-glow');
+      resetBtn.classList.remove('hidden');
+      presetsSection.style.display = '';
+      enablePresets();
+      navSettings.classList.remove('disabled');
+      setState(null);
+    }, 5000);
+  }
+
+  playBtn.addEventListener('click', () => { if (running) pause(); else start(); });
+
+  repeatBtn.addEventListener('click', () => {
+    clearTimeout(doneFlashTimeout); doneFlashTimeout = null;
+    const secs = totalSeconds;
+    display.classList.remove('done');
+    repeatBtn.classList.remove('reset-glow');
+    repeatBtn.classList.add('hidden');
+    resetBtn.classList.add('hidden');
+    setState(null);
+    enablePresets();
+    navSettings.classList.remove('disabled');
+    setTimer(secs);
+    start();
+  });
+
+  resetBtn.addEventListener('click', () => {
+    clearTimeout(doneFlashTimeout); doneFlashTimeout = null;
+    display.classList.remove('done');
+    repeatBtn.classList.remove('reset-glow');
+    selectedPreset = null;
+    presetBtns.forEach(b => b.classList.remove('active'));
+    exitCustomMode();
+    enablePresets();
+    navSettings.classList.remove('disabled');
+    setTimer(0);
+  });
+
+  presetBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const secs = parseInt(btn.dataset.seconds);
+      selectedPreset = secs;
+      presetBtns.forEach(b => b.classList.remove('active'));
+      customTimeBtn.classList.remove('active');
+      btn.classList.add('active');
+      setTimer(secs);
+    });
+  });
+
+  // ── Nav tabs ──────────────────────────────────────────
+  const navTimer = document.getElementById('navTimer');
+  const timerPage = document.getElementById('timerPage');
+  const settingsPage = document.getElementById('settingsPage');
+
+  function showPage(page) {
+    timerPage.classList.toggle('active', page === 'timer');
+    settingsPage.classList.toggle('active', page === 'settings');
+    navTimer.classList.toggle('active', page === 'timer');
+    navSettings.classList.toggle('active', page === 'settings');
+    navTimer.querySelector('.material-symbols-outlined').style.fontVariationSettings = page === 'timer' ? "'FILL' 1" : "'FILL' 0";
+    navSettings.querySelector('.material-symbols-outlined').style.fontVariationSettings = page === 'settings' ? "'FILL' 1" : "'FILL' 0";
+    if (page === 'settings') showSubPage('hub');
+  }
+  navTimer.addEventListener('click', () => showPage('timer'));
+  navSettings.addEventListener('click', () => showPage('settings'));
+
+  function showSubPage(id) {
+    document.querySelectorAll('.sub-page').forEach(p => p.classList.remove('active'));
+    const map = { hub: 'settingsHub', chime: 'chimePage', presets: 'presetsSubPage', modes: 'modesPage', volume: 'volumePage' };
+    document.getElementById(map[id]).classList.add('active');
+  }
+
+  document.getElementById('goChimeBtn').addEventListener('click', () => showSubPage('chime'));
+  document.getElementById('goPresetsBtn').addEventListener('click', () => showSubPage('presets'));
+  document.getElementById('goModesBtn').addEventListener('click', () => showSubPage('modes'));
+  document.getElementById('goVolumeBtn').addEventListener('click', () => showSubPage('volume'));
+  document.getElementById('chimeBack').addEventListener('click', () => showSubPage('hub'));
+  document.getElementById('presetsBack').addEventListener('click', () => showSubPage('hub'));
+  document.getElementById('modesBack').addEventListener('click', () => showSubPage('hub'));
+  document.getElementById('volumeBack').addEventListener('click', () => showSubPage('hub'));
+
+  // ── Chime definitions (20) ────────────────────────────
+  const CHIMES = [
+    { id: 'triad',       name: 'Ascending triad',      desc: 'C · E · G — soft and warm' },
+    { id: 'bells',       name: 'Meditation bells',     desc: 'Three slow resonant strikes' },
+    { id: 'gong',        name: 'Deep gong',            desc: 'Single low resonant tone' },
+    { id: 'pentatonic',  name: 'Pentatonic rise',      desc: 'Five notes climbing gently' },
+    { id: 'crystal',     name: 'Crystal bowl',         desc: 'Pure sine, long sustain' },
+    { id: 'harp',        name: 'Harp glissando',       desc: 'Quick upward sweep' },
+    { id: 'vibraphone',  name: 'Vibraphone hit',       desc: 'Warm metallic single note' },
+    { id: 'chime3',      name: 'Triple chime',         desc: 'Three even mid-range tones' },
+    { id: 'soft2',       name: 'Soft two-note',        desc: 'Gentle ascending pair' },
+    { id: 'lowbell',     name: 'Low bell',             desc: 'Deep single bell tone' },
+    { id: 'highbell',    name: 'High bell',            desc: 'Bright single bell tone' },
+    { id: 'resolution',  name: 'Resolution chord',     desc: 'Two-note musical resolve' },
+    { id: 'marimba',     name: 'Marimba tap',          desc: 'Short wooden mid tone' },
+    { id: 'breathe',     name: 'Breathe',              desc: 'Slow swelling tone' },
+    { id: 'cascade',     name: 'Cascade',              desc: 'Four descending soft notes' },
+    { id: 'shimmer',     name: 'Shimmer',              desc: 'Oscillating airy tone' },
+    { id: 'pulse',       name: 'Pulse',                desc: 'Rhythmic triple beat' },
+    { id: 'warm',        name: 'Warm tone',            desc: 'Single sustained warm note' },
+    { id: 'morning',     name: 'Morning',              desc: 'Bright rising two-note' },
+    { id: 'none',        name: 'Silent',               desc: 'No sound on completion' },
+  ];
+
+  let selectedChime = 'triad';
+  let pendingChime = 'triad';
+
+  function playChimeType(id) {
+    if (id === 'none') return;
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const t = ctx.currentTime;
+      const sine = (freq, start, vol, dur) => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.connect(g); g.connect(ctx.destination);
+        o.type = 'sine'; o.frequency.setValueAtTime(freq, start);
+        g.gain.setValueAtTime(0, start);
+        g.gain.linearRampToValueAtTime(vol * chimeVolume, start + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.001, start + dur);
+        o.start(start); o.stop(start + dur);
+      };
+      const notes = (freqs, gap, vol, dur) => freqs.forEach((f, i) => sine(f, t + i * gap, vol, dur));
+
+      if (id === 'triad')      notes([523.25, 659.25, 783.99], 0.38, 0.18, 1.8);
+      else if (id === 'bells') [0,0.7,1.4].forEach(d => sine(880, t+d, 0.2, 2.2));
+      else if (id === 'gong')  { const o=ctx.createOscillator(),g=ctx.createGain(); o.connect(g); g.connect(ctx.destination); o.type='sine'; o.frequency.setValueAtTime(110,t); o.frequency.exponentialRampToValueAtTime(80,t+0.5); g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.3*chimeVolume,t+0.02); g.gain.exponentialRampToValueAtTime(0.001,t+3.5); o.start(t); o.stop(t+3.5); }
+      else if (id === 'pentatonic')  notes([261.63,293.66,329.63,392,440], 0.3, 0.15, 1.5);
+      else if (id === 'crystal')     sine(1046.5, t, 0.12, 3.0);
+      else if (id === 'harp')        notes([392,440,523.25,659.25,783.99,1046.5], 0.1, 0.1, 0.8);
+      else if (id === 'vibraphone')  sine(880, t, 0.22, 2.0);
+      else if (id === 'chime3')      notes([659.25,659.25,659.25], 0.45, 0.18, 1.6);
+      else if (id === 'soft2')       notes([440, 554.37], 0.5, 0.16, 2.0);
+      else if (id === 'lowbell')     sine(220, t, 0.25, 2.5);
+      else if (id === 'highbell')    sine(1318.5, t, 0.12, 1.8);
+      else if (id === 'resolution')  notes([392, 523.25], 0.6, 0.18, 2.0);
+      else if (id === 'marimba')     sine(523.25, t, 0.2, 0.9);
+      else if (id === 'breathe')     { const o=ctx.createOscillator(),g=ctx.createGain(); o.connect(g); g.connect(ctx.destination); o.type='sine'; o.frequency.setValueAtTime(440,t); g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.2*chimeVolume,t+0.8); g.gain.linearRampToValueAtTime(0,t+2.5); o.start(t); o.stop(t+2.6); }
+      else if (id === 'cascade')     notes([783.99,659.25,523.25,392], 0.35, 0.15, 1.4);
+      else if (id === 'shimmer')     { const o=ctx.createOscillator(),g=ctx.createGain(); o.connect(g); g.connect(ctx.destination); o.type='sine'; o.frequency.setValueAtTime(880,t); o.frequency.linearRampToValueAtTime(920,t+0.5); o.frequency.linearRampToValueAtTime(880,t+1.0); g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.15*chimeVolume,t+0.05); g.gain.exponentialRampToValueAtTime(0.001,t+2.0); o.start(t); o.stop(t+2.0); }
+      else if (id === 'pulse')       [0,0.3,0.6].forEach(d => sine(660, t+d, 0.18, 0.5));
+      else if (id === 'warm')        sine(330, t, 0.2, 2.5);
+      else if (id === 'morning')     notes([659.25, 880], 0.55, 0.16, 2.0);
+    } catch(e) {}
+  }
+
+  function playChimes() {
+    if (!soundEnabled) return;
+    playChimeType(selectedChime);
+  }
+
+  // Build chime list
+  const chimeList = document.getElementById('chimeList');
+  CHIMES.forEach(c => {
+    const row = document.createElement('button');
+    row.className = 'chime-item' + (c.id === selectedChime ? ' selected' : '');
+    row.dataset.id = c.id;
+    row.innerHTML = `
+      <div class="chime-item-info">
+        <span class="chime-item-name">${c.name}</span>
+        <span class="chime-item-desc">${c.desc}</span>
+      </div>
+      <div class="chime-item-right">
+        ${c.id !== 'none' ? `<button class="chime-preview-btn material-symbols-outlined" data-id="${c.id}">play_circle</button>` : ''}
+        <div class="chime-dot"></div>
+      </div>`;
+    row.addEventListener('click', (e) => {
+      if (e.target.classList.contains('chime-preview-btn')) {
+        playChimeType(e.target.dataset.id);
+        return;
+      }
+      pendingChime = c.id;
+      document.querySelectorAll('.chime-item').forEach(r => r.classList.remove('selected'));
+      row.classList.add('selected');
+      if (c.id !== 'none') playChimeType(c.id);
+    });
+    chimeList.appendChild(row);
+  });
+
+  document.getElementById('applyChimeBtn').addEventListener('click', () => {
+    selectedChime = pendingChime;
+    const btn = document.getElementById('applyChimeBtn');
+    btn.innerHTML = '<span class="material-symbols-outlined">check_circle</span> Changes saved';
+    setTimeout(() => {
+      btn.innerHTML = '<span class="material-symbols-outlined">check</span> Save';
+      showSubPage('hub');
+    }, 1000);
+  });
+
+  // ── Preset editor ─────────────────────────────────────
+  const presetData = [
+    { label: '30 minutes', h: 0, m: 30, s: 0 },
+    { label: '1 hour',     h: 1, m: 0,  s: 0 },
+    { label: '2 hours',    h: 2, m: 0,  s: 0 },
+  ];
+
+  function buildPresetEditor() {
+    const editor = document.getElementById('presetEditor');
+    editor.innerHTML = '';
+    presetData.forEach((p, idx) => {
+      const block = document.createElement('div');
+      block.className = 'preset-block';
+      block.dataset.index = idx;
+      // Build hour/min/sec options
+      const hOpts = Array.from({length:24},(_,i)=>`<option value="${i}"${i===p.h?' selected':''}>${String(i).padStart(2,'0')}</option>`).join('');
+      const mOpts = Array.from({length:60},(_,i)=>`<option value="${i}"${i===p.m?' selected':''}>${String(i).padStart(2,'0')}</option>`).join('');
+      const sOpts = Array.from({length:60},(_,i)=>`<option value="${i}"${i===p.s?' selected':''}>${String(i).padStart(2,'0')}</option>`).join('');
+      block.innerHTML = `
+        <p class="preset-block-label">Preset ${idx + 1}</p>
+        <input class="preset-block-name" type="text" value="${p.label}" maxlength="20" placeholder="Label"/>
+        <div class="preset-block-time">
+          <div class="preset-block-time-group">
+            <span class="preset-block-time-label">Hr</span>
+            <select class="preset-time-sel" data-type="h">${hOpts}</select>
+          </div>
+          <span class="preset-time-colon">:</span>
+          <div class="preset-block-time-group">
+            <span class="preset-block-time-label">Min</span>
+            <select class="preset-time-sel" data-type="m">${mOpts}</select>
+          </div>
+          <span class="preset-time-colon">:</span>
+          <div class="preset-block-time-group">
+            <span class="preset-block-time-label">Sec</span>
+            <select class="preset-time-sel" data-type="s">${sOpts}</select>
+          </div>
+        </div>`;
+      editor.appendChild(block);
+    });
+  }
+  buildPresetEditor();
+
+  document.getElementById('applyPresetsBtn').addEventListener('click', () => {
+    document.querySelectorAll('.preset-block').forEach((block, idx) => {
+      const lbl = block.querySelector('.preset-block-name').value.trim() || `Preset ${idx+1}`;
+      const h = parseInt(block.querySelector('[data-type="h"]').value);
+      const m = parseInt(block.querySelector('[data-type="m"]').value);
+      const s = parseInt(block.querySelector('[data-type="s"]').value);
+      const secs = h*3600 + m*60 + s;
+      if (secs === 0) return;
+      presetData[idx] = { label: lbl, h, m, s };
+      const btn = presetBtns[idx];
+      btn.textContent = lbl;
+      btn.dataset.seconds = secs;
+    });
+    const applyBtn = document.getElementById('applyPresetsBtn');
+    applyBtn.innerHTML = '<span class="material-symbols-outlined">check_circle</span> Changes saved';
+    setTimeout(() => {
+      applyBtn.innerHTML = '<span class="material-symbols-outlined">check</span> Save';
+      showSubPage('hub');
+    }, 1000);
+  });
+
+  // ── Speaker btn ───────────────────────────────────────
+  speakerBtn.addEventListener('click', () => {
+    soundEnabled = !soundEnabled;
+    speakerIcon.textContent = soundEnabled ? (chimeVolume < 0.5 ? 'volume_down' : 'volume_up') : 'volume_off';
+    speakerBtn.classList.toggle('muted', !soundEnabled);
+    // Reflect in slider: mute sets slider to 0, unmute restores last non-zero value
+    if (!soundEnabled) {
+      volumeSlider.value = 0;
+      volumeDisplay.textContent = '0%';
+    } else {
+      const restored = Math.max(Math.round(chimeVolume * 100), 20);
+      chimeVolume = restored / 100;
+      volumeSlider.value = restored;
+      volumeDisplay.textContent = restored + '%';
+    }
+  });
+
+  // ── Volume slider ─────────────────────────────────────
+  const volumeSlider = document.getElementById('volumeSlider');
+  const volumeDisplay = document.getElementById('volumeDisplay');
+  volumeSlider.addEventListener('input', () => {
+    const val = parseInt(volumeSlider.value);
+    chimeVolume = val / 100;
+    volumeDisplay.textContent = val + '%';
+    // Mute speaker icon in header when volume is 0
+    soundEnabled = val > 0;
+    speakerIcon.textContent = val === 0 ? 'volume_off' : val < 50 ? 'volume_down' : 'volume_up';
+    speakerBtn.classList.toggle('muted', val === 0);
+  });
+  document.getElementById('progressToggle').addEventListener('change', (e) => {
+    progressBarEnabled = e.target.checked;
+    if (!progressBarEnabled) {
+      progressBar.style.transition = 'opacity 0.4s ease';
+      progressBar.classList.add('hidden');
+    } else if (running) {
+      const pct = ((totalSeconds - remaining) / totalSeconds) * 100;
+      progressBar.style.transition = 'none';
+      progressBar.style.width = pct + '%';
+      progressBar.classList.remove('hidden');
+    }
+  });
+
+  // ── Digit animation toggle ────────────────────────────
+  document.getElementById('digitAnimToggle').addEventListener('change', (e) => {
+    digitAnimEnabled = e.target.checked;
+  });
+
+  // ── Service worker ────────────────────────────────────
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+</script>
+</body>
+</html>
